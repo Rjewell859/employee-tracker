@@ -14,7 +14,7 @@ VALUES ("Test", 50, 2),
        SELECT * FROM roles;
        
 INSERT INTO employees (first_name, last_name, role_id, manager_id)
-VALUES ("Jim", "Junior", 4, 1),
+VALUES ("Jim", "Junior", 5, 1),
        ("Boat", "Sam", 2, 1),
        ("Tater", "Foot", 3, 1),
        ("Smeckle", "Goat", 1, 1);
