@@ -117,23 +117,19 @@ var refreshRoleQuestions = function () {
   return roleQuestions
 }
 
-var refreshUpdateRole = function () {
-  const updateRoleQuestions = [{
-      type: 'list',
-      name: 'employee',
-      message: 'Which employee would you like to switch roles?',
-      choices: getEmployees()
-    },
-    {
-      type: 'list',
-      name: 'role',
-      message: 'Which role to assign?',
-      choices: getRoles()
-    },
-  ];
-  return updateRoleQuestions
-}
-
+var updateRoleQuestions = [{
+  type: 'list',
+  name: 'employee',
+  message: 'Which employee would you like to switch roles?',
+  choices: getEmployees()
+},
+{
+  type: 'list',
+  name: 'role',
+  message: 'Which role to assign?',
+  choices: getRoles()
+},
+];
 var updateManagerQuestions = [{
     type: 'list',
     name: 'employee',
@@ -145,8 +141,9 @@ var updateManagerQuestions = [{
     name: 'manager',
     message: 'Which manager to assign?',
     choices: getManagers()
-  }
+  },
 ];
+
 var viewAllEmployees = function () {
   db.query(`SELECT
   e.id AS "Employee ID",
@@ -277,8 +274,6 @@ var updateEmployeeRole = function (response) {
         if (err) {
           console.log(err);
         }
-        console.log(result);
-        console.log('reached')
         askQuestions()
       });
     }))
@@ -309,8 +304,6 @@ var updateEmployeeManager = function (response) {
         if (err) {
           console.log(err);
         }
-        console.log(result);
-        console.log('reached')
         askQuestions()
       });
     }))
@@ -339,9 +332,11 @@ var nextQuestions = function (response) {
       viewAllRoles();
       break;
     case 'Update an employee role':
+      refreshInfo();
       askUpdateRoleQuestions();
       break;
     case 'Update an employee manager':
+      refreshInfo();
       askUpdateManagerQuestions();
       break;
     default:
@@ -383,7 +378,7 @@ var askRoleQuestions = function () {
 
 var askUpdateRoleQuestions = function () {
   inquirer
-    .prompt(refreshUpdateRole())
+    .prompt(updateRoleQuestions)
     .then((data) =>
       updateEmployeeRole(JSON.stringify(data))
     )
