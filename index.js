@@ -10,6 +10,15 @@ const db = mysql.createConnection({
   console.log(`Connected to the employees_db database.`)
 );
 
+const getEmployees = function () {
+  let employees = []
+  db.query(`SELECT * FROM employees`, function (err, results) {
+    for (let i = 0; i < results.length; i++) {
+      employees.push(results[i].first_name + " " + results[i].last_name)
+    }
+  })
+  return employees
+}
 const getDepartments = function () {
   let departments = []
   db.query(`SELECT * FROM departments`, function (err, results) {
@@ -51,8 +60,9 @@ const questions = [{
   type: 'list',
   name: 'menu',
   message: 'What would you like to do?',
-  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View all departments', 'View all roles', 'Exit']
+  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View all departments', 'View all roles', 'Update an employee', 'Exit']
 }, ];
+var refreshQuestions = function () {
 const empQuestions = [{
     type: 'input',
     name: 'firstName',
@@ -76,6 +86,8 @@ const empQuestions = [{
     choices: getManagers()
   },
 ];
+return empQuestions
+}
 const departmentQuestion = {
   type: 'input',
   name: 'departmentName',
@@ -98,6 +110,18 @@ const roleQuestions = [{
     choices: getDepartments()
   },
 ]
+const updateEmpQuestions = [{
+  type: 'list',
+  name: 'employee',
+  message: 'Which employee would you like to switch roles?',
+  choices: getEmployees()
+},
+{
+  type: 'list',
+  name: 'role',
+  message: 'Which role to assign?',
+  choices: getRoles()
+}]
 
 var viewAllEmployees = function () {
   db.query(`SELECT
@@ -172,65 +196,8 @@ var addRole = function (response) {
   askQuestions();
 })
 }
-var nextQuestions = function (response) {
-  response = JSON.parse(response)
-  switch (response.menu) {
-    case 'Add an employee':
-      askEmployeeQuestions();
-      break;
-    case 'Add a department':
-      askDepartmentQuestions();
-      break;
-    case 'Add a role':
-      askRoleQuestions();
-      break;
-    case 'View all employees':
-      viewAllEmployees();
-      break;
-    case 'View all departments':
-      viewAllDepartments();
-      break;
-    case 'View all roles':
-      viewAllRoles();
-      break;
-    default:
-      return;
-  }
-}
 
-var askQuestions = function () {
-  inquirer
-    .prompt(questions)
-    .then((data) =>
-      nextQuestions(JSON.stringify(data))
-    )
-}
-
-var askEmployeeQuestions = function () {
-  inquirer
-    .prompt(empQuestions)
-    .then((data) =>
-      saveEmployee(JSON.stringify(data))
-    )
-}
-
-var askDepartmentQuestions = function () {
-  inquirer
-    .prompt(departmentQuestion)
-    .then((data) =>
-      addDepartment(JSON.stringify(data))
-    )
-}
-
-var askRoleQuestions = function () {
-  inquirer
-    .prompt(roleQuestions)
-    .then((data) =>
-      addRole(JSON.stringify(data))
-    )
-}
-
-var saveEmployee = function (response) {
+var addEmployee = function (response) {
   response = JSON.parse(response);
 
   let currentManager = ''
@@ -261,6 +228,106 @@ var saveEmployee = function (response) {
     }))
   });
 
+}
+
+var updateEmployee = function (response) {
+  response = JSON.parse(response)
+  let employeeName = response.employee.split(" ")
+  let currentId = ''
+  let currentRole = ''
+  db.query(`SELECT id FROM roles WHERE('${response.role}' = roles.title)`, function (err, roleresult) {
+    if (err) {
+      console.log(err);
+    }
+    
+  (db.query(`SELECT id FROM employees WHERE ('${employeeName[0]}'= employees.first_name AND '${employeeName[1]}' = employees.last_name)`, function (err, result) {
+    currentRole = roleresult[0].id
+    currentId = result[0].id
+    if (err) {
+      console.log(err);
+    }
+    db.query(`UPDATE employees
+    SET employees.role_id = ${currentRole}
+    WHERE employees.id = ${currentId};
+    `, function (err, result) {
+      if (err) {
+        console.log(err);
+      }
+      console.log(result);
+      console.log('reached')
+      askQuestions()
+    });
+  }))
+  })
+}
+
+var nextQuestions = function (response) {
+  response = JSON.parse(response)
+  switch (response.menu) {
+    case 'Add an employee':
+      askEmployeeQuestions();
+      break;
+    case 'Add a department':
+      askDepartmentQuestions();
+      break;
+    case 'Add a role':
+      askRoleQuestions();
+      break;
+    case 'View all employees':
+      viewAllEmployees();
+      break;
+    case 'View all departments':
+      viewAllDepartments();
+      break;
+    case 'View all roles':
+      viewAllRoles();
+      break;
+      case 'Update an employee':
+      askUpdateEmpQuestions();
+      break;
+    default:
+      return;
+  }
+}
+
+var askQuestions = function () {
+  inquirer
+    .prompt(questions)
+    .then((data) =>
+      nextQuestions(JSON.stringify(data))
+    )
+}
+
+var askEmployeeQuestions = function () {
+  inquirer
+    .prompt(refreshQuestions())
+    .then((data) =>
+      addEmployee(JSON.stringify(data))
+    )
+}
+
+var askDepartmentQuestions = function () {
+  inquirer
+    .prompt(departmentQuestion)
+    .then((data) =>
+      addDepartment(JSON.stringify(data))
+    )
+}
+
+var askRoleQuestions = function () {
+  inquirer
+    .prompt(roleQuestions)
+    .then((data) =>
+      addRole(JSON.stringify(data))
+    )
+}
+
+var askUpdateEmpQuestions = function () {
+  inquirer
+    .prompt(updateEmpQuestions)
+    .then((data) =>
+      updateEmployee(JSON.stringify(data))
+    )
 }
 
 function init() {
