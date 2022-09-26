@@ -62,7 +62,7 @@ const questions = [{
   type: 'list',
   name: 'menu',
   message: 'What would you like to do?',
-  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Exit']
+  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View employees by manager', 'View employees by department', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Exit']
 }, ];
 var refreshEmpQuestions = function () {
   const empQuestions = [{
@@ -157,6 +157,45 @@ FROM employees e
 JOIN roles ON e.role_id = roles.id
 JOIN departments ON roles.department_id = departments.id
 INNER JOIN employees m ON e.manager_id = m.id;`, function (err, results) {
+    console.log('\n')
+    console.table(results);
+  });
+  askQuestions();
+}
+
+var viewByManager = function () {
+  db.query(`SELECT
+  e.id AS "Employee ID",
+  e.first_name AS "First Name",
+  e.last_name AS "Last Name",
+  roles.title AS Title,
+  departments.department_name AS Department,
+  roles.salary AS Salary,
+  CONCAT((m.first_name),(' '), (m.last_name)) AS Manager
+FROM employees e
+JOIN roles ON e.role_id = roles.id
+JOIN departments ON roles.department_id = departments.id
+INNER JOIN employees m ON e.manager_id = m.id
+ORDER BY manager;`, function (err, results) {
+    console.log('\n')
+    console.table(results);
+  });
+  askQuestions();
+}
+var viewByDepartment = function () {
+  db.query(`SELECT
+  e.id AS "Employee ID",
+  e.first_name AS "First Name",
+  e.last_name AS "Last Name",
+  roles.title AS Title,
+  departments.department_name AS Department,
+  roles.salary AS Salary,
+  CONCAT((m.first_name),(' '), (m.last_name)) AS Manager
+FROM employees e
+JOIN roles ON e.role_id = roles.id
+JOIN departments ON roles.department_id = departments.id
+INNER JOIN employees m ON e.manager_id = m.id
+ORDER BY department;`, function (err, results) {
     console.log('\n')
     console.table(results);
   });
@@ -310,6 +349,16 @@ var updateEmployeeManager = function (response) {
   })
 }
 
+var deleteDepartment = function(){
+
+}
+var deleteRole = function(){
+
+}
+var deleteEmployee = function(){
+
+}
+
 var nextQuestions = function (response) {
   response = JSON.parse(response)
   switch (response.menu) {
@@ -325,6 +374,12 @@ var nextQuestions = function (response) {
     case 'View all employees':
       viewAllEmployees();
       break;
+      case 'View employees by manager':
+      viewByManager();
+      break;
+      case 'View employees by department':
+      viewByDepartment();
+      break;
     case 'View all departments':
       viewAllDepartments();
       break;
@@ -332,11 +387,9 @@ var nextQuestions = function (response) {
       viewAllRoles();
       break;
     case 'Update an employee role':
-      refreshInfo();
       askUpdateRoleQuestions();
       break;
     case 'Update an employee manager':
-      refreshInfo();
       askUpdateManagerQuestions();
       break;
     default:
