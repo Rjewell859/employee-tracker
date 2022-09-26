@@ -1,13 +1,47 @@
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
 
-var managers = []
-var rolesArray = []
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'root',
+    database: 'employee_db'
+  },
+  console.log(`Connected to the employees_db database.`)
+);
+
+const getRoles = function () {
+  let roles = []
+  db.query(`SELECT * FROM roles`, function (err, results) {
+    for (let i = 0; i < results.length; i++) {
+      roles.push(results[i].title)
+    }
+  })
+  return roles
+}
+const getManagers = function () {
+  let managers = []
+  db.query(`
+  SELECT
+  e.first_name,
+  e.last_name
+FROM employees e
+JOIN roles ON e.role_id = roles.id
+JOIN departments ON roles.department_id = departments.id
+WHERE department_name = "Management";`, function (err, results) {
+
+    for (let i = 0; i < results.length; i++) {
+      managers.push(results[i].first_name + " " + results[i].last_name)
+    }
+  })
+  return managers
+}
+
 const questions = [{
   type: 'list',
   name: 'menu',
   message: 'What would you like to do?',
-  choices: ['Add an employee']
+  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View all departments', 'View all roles', 'Exit']
 }, ];
 const empQuestions = [{
     type: 'input',
@@ -23,63 +57,15 @@ const empQuestions = [{
     type: 'list',
     name: 'role',
     message: 'What is their role?',
-    choices: rolesArray
+    choices: getRoles()
   },
   {
     type: 'list',
     name: 'manager',
     message: 'Who is their manager?',
-    choices: managers
+    choices: getManagers()
   },
 ];
-
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'employee_db'
-  },
-  console.log(`Connected to the employees_db database.`)
-);
-
-const getRoles = function () {
-  db.query(`SELECT * FROM roles`, function (err, results) {
-    for (let i = 0; i < results.length; i++) {
-      rolesArray.push(results[i].title)
-    }
-  })
-}
-const getManagers = function () {
-  db.query(`
-  SELECT *
-  FROM employees
-  WHERE role_id = 5`, function (err, results) {
-    
-    for (let i = 0; i < results.length; i++) {
-      managers.push(results[i].first_name + " " + results[i].last_name)
-    }
-  })
-}
-
-
-getRoles()
-getManagers()
-
-db.query(`SELECT
-employees.first_name AS "First Name", roles.title AS Title
-FROM employees
-JOIN roles ON employees.role_id = roles.id;`, function (err, results) {
-  console.table(results);
-});
-
-db.query(`SELECT
-  roles.title AS "Role", departments.department_name AS Department
-  FROM roles
-  JOIN departments ON roles.department_id = departments.id;`, function (err, results) {
-  console.table(results);
-});
-
-
 
 var viewAllEmployees = function () {
   db.query(`SELECT
@@ -94,11 +80,39 @@ FROM employees e
 JOIN roles ON e.role_id = roles.id
 JOIN departments ON roles.department_id = departments.id
 INNER JOIN employees m ON e.manager_id = m.id;`, function (err, results) {
+    console.log('\n')
     console.table(results);
   });
-
+  askQuestions();
 }
-viewAllEmployees();
+
+var viewAllRoles = function () {
+  db.query(`SELECT 
+  r.id AS "Role ID",
+  r.title AS "Title",
+  r.salary AS "Salary",
+  departments.department_name AS Department
+  FROM roles r
+  JOIN departments ON r.department_id = departments.id`, function (err, results) {
+    console.log('\n')
+    console.table(results);
+  });
+  askQuestions();
+}
+
+var viewAllDepartments = function () {
+  db.query(`SELECT
+  d.id AS "Department ID",
+  d.department_name AS "Department Name"
+  FROM departments d`, function (err, results) {
+    console.log('\n')
+    console.table(results);
+  });
+  askQuestions();
+}
+
+var addDepartment = function() {}
+var addRole = function() {}
 
 var nextQuestions = function (response) {
   response = JSON.parse(response)
@@ -106,12 +120,19 @@ var nextQuestions = function (response) {
     case 'Add an employee':
       askEmployeeQuestions();
       break;
+    case 'View all employees':
+      viewAllEmployees();
+      break;
+    case 'View all departments':
+      viewAllDepartments();
+      break;
+    case 'View all roles':
+      viewAllRoles();
+      break;
     default:
       return;
   }
-
 }
-
 
 var askQuestions = function () {
   inquirer
@@ -131,42 +152,38 @@ var askEmployeeQuestions = function () {
 
 var saveEmployee = function (response) {
   response = JSON.parse(response);
+
   let currentManager = ''
   let currentRole = ''
   let managerName = response.manager.split(" ");
-  db.query(`SELECT id FROM roles WHERE('${response.role}' = roles.title)`, function (err, reresult) {
+
+  db.query(`SELECT id FROM roles WHERE('${response.role}' = roles.title)`, function (err, roleresult) {
     if (err) {
       console.log(err);
     }
-    
- (db.query(`SELECT id FROM employees WHERE ('${managerName[0]}'= employees.first_name AND '${managerName[1]}' = employees.last_name)`, function (err, result) {
+    (db.query(`SELECT id FROM employees WHERE ('${managerName[0]}'= employees.first_name AND '${managerName[1]}' = employees.last_name)`, function (err, result) {
 
-  if (err) {
-    console.log(err);
-  }
-  currentManager = result[0].id
-  console.log(currentManager)
-  console.log(currentManager)
-  db.query(`INSERT INTO employees (first_name, last_name, role_id, manager_id)
-  VALUES ("${response.firstName}", "${response.lastName}", ${reresult[0].id}, ${currentManager})`, function (err, result) {
-    if (err) {
-      console.log(err);
-    }
-    console.log(result);
-    console.log('reached')
-    viewAllEmployees();
-    getRoles()
-getManagers()
-  });
-}))
-  });
-  
+      currentRole = roleresult[0].id
+      currentManager = result[0].id
 
+      if (err) {
+        console.log(err);
+      }
+      db.query(`INSERT INTO employees (first_name, last_name, role_id, manager_id)
+  VALUES ("${response.firstName}", "${response.lastName}", ${currentRole}, ${currentManager})`, function (err, result) {
+        if (err) {
+          console.log(err);
+        }
+        console.log(result);
+        console.log('reached')
+        askQuestions()
+      });
+    }))
+  });
 
 }
 
 function init() {
   askQuestions()
 }
-
 init();
