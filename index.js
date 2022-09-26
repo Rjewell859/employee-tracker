@@ -10,6 +10,16 @@ const db = mysql.createConnection({
   console.log(`Connected to the employees_db database.`)
 );
 
+const getDepartments = function () {
+  let departments = []
+  db.query(`SELECT * FROM departments`, function (err, results) {
+    for (let i = 0; i < results.length; i++) {
+      departments.push(results[i].department_name)
+    }
+  })
+  return departments
+}
+
 const getRoles = function () {
   let roles = []
   db.query(`SELECT * FROM roles`, function (err, results) {
@@ -66,6 +76,28 @@ const empQuestions = [{
     choices: getManagers()
   },
 ];
+const departmentQuestion = {
+  type: 'input',
+  name: 'departmentName',
+  message: 'What is the department name?'
+}
+const roleQuestions = [{
+    type: 'input',
+    name: 'roleName',
+    message: 'What is the role name?'
+  },
+  {
+    type: 'input',
+    name: 'salary',
+    message: 'What is the salary?'
+  },
+  {
+    type: 'list',
+    name: 'department',
+    message: 'Which department is this role in?',
+    choices: getDepartments()
+  },
+]
 
 var viewAllEmployees = function () {
   db.query(`SELECT
@@ -111,14 +143,46 @@ var viewAllDepartments = function () {
   askQuestions();
 }
 
-var addDepartment = function() {}
-var addRole = function() {}
-
+var addDepartment = function (response) {
+  response = JSON.parse(response)
+  let toInsert = response.departmentName
+  db.query(`INSERT INTO departments (department_name) VALUES(?)`, toInsert, function (err, result) {
+    if (err) {
+      console.log(err);
+    }
+    console.log(result);
+  });
+  askQuestions();
+}
+var addRole = function (response) {
+  response = JSON.parse(response)
+  db.query(`SELECT id FROM departments WHERE('${response.department}' = departments.department_name)`, function (err, departmentResult) {
+    if (err) {
+      console.log(err);
+    }
+    let toInsert = [
+      [response.roleName, response.salary, departmentResult[0].id]
+    ];
+  db.query(`INSERT INTO roles (title, salary, department_id) VALUES(?)`, toInsert, function (err, result) {
+    if (err) {
+      console.log(err);
+    }
+    console.log(result);
+  });
+  askQuestions();
+})
+}
 var nextQuestions = function (response) {
   response = JSON.parse(response)
   switch (response.menu) {
     case 'Add an employee':
       askEmployeeQuestions();
+      break;
+    case 'Add a department':
+      askDepartmentQuestions();
+      break;
+    case 'Add a role':
+      askRoleQuestions();
       break;
     case 'View all employees':
       viewAllEmployees();
@@ -147,6 +211,22 @@ var askEmployeeQuestions = function () {
     .prompt(empQuestions)
     .then((data) =>
       saveEmployee(JSON.stringify(data))
+    )
+}
+
+var askDepartmentQuestions = function () {
+  inquirer
+    .prompt(departmentQuestion)
+    .then((data) =>
+      addDepartment(JSON.stringify(data))
+    )
+}
+
+var askRoleQuestions = function () {
+  inquirer
+    .prompt(roleQuestions)
+    .then((data) =>
+      addRole(JSON.stringify(data))
     )
 }
 
