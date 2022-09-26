@@ -19,7 +19,7 @@ VALUES
        ("Systems Architect", 174000, 4),
        ("Database Administrator", 130000, 4),
        ("Sales Manager", 110000, 5),
-       ("Software Engineering Manager", 10099000, 5);
+       ("Software Engineering Manager", 180000, 5);
 
        SELECT * FROM roles;
        

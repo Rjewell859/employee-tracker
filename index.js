@@ -10,7 +10,9 @@ const db = mysql.createConnection({
   console.log(`Connected to the employees_db database.`)
 );
 
-const getEmployees = function () {
+
+
+var getEmployees = function () {
   let employees = []
   db.query(`SELECT * FROM employees`, function (err, results) {
     for (let i = 0; i < results.length; i++) {
@@ -19,7 +21,7 @@ const getEmployees = function () {
   })
   return employees
 }
-const getDepartments = function () {
+var getDepartments = function () {
   let departments = []
   db.query(`SELECT * FROM departments`, function (err, results) {
     for (let i = 0; i < results.length; i++) {
@@ -29,7 +31,7 @@ const getDepartments = function () {
   return departments
 }
 
-const getRoles = function () {
+var getRoles = function () {
   let roles = []
   db.query(`SELECT * FROM roles`, function (err, results) {
     for (let i = 0; i < results.length; i++) {
@@ -38,7 +40,7 @@ const getRoles = function () {
   })
   return roles
 }
-const getManagers = function () {
+var getManagers = function () {
   let managers = []
   db.query(`
   SELECT
@@ -60,69 +62,91 @@ const questions = [{
   type: 'list',
   name: 'menu',
   message: 'What would you like to do?',
-  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View all departments', 'View all roles', 'Update an employee', 'Exit']
+  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Exit']
 }, ];
-var refreshQuestions = function () {
-const empQuestions = [{
-    type: 'input',
-    name: 'firstName',
-    message: 'What is their first name?',
-  },
-  {
-    type: 'input',
-    name: 'lastName',
-    message: 'What is their last name?',
-  },
-  {
-    type: 'list',
-    name: 'role',
-    message: 'What is their role?',
-    choices: getRoles()
-  },
-  {
-    type: 'list',
-    name: 'manager',
-    message: 'Who is their manager?',
-    choices: getManagers()
-  },
-];
-return empQuestions
+var refreshEmpQuestions = function () {
+  const empQuestions = [{
+      type: 'input',
+      name: 'firstName',
+      message: 'What is their first name?',
+    },
+    {
+      type: 'input',
+      name: 'lastName',
+      message: 'What is their last name?',
+    },
+    {
+      type: 'list',
+      name: 'role',
+      message: 'What is their role?',
+      choices: getRoles()
+    },
+    {
+      type: 'list',
+      name: 'manager',
+      message: 'Who is their manager?',
+      choices: getManagers()
+    },
+  ];
+  return empQuestions
 }
 const departmentQuestion = {
   type: 'input',
   name: 'departmentName',
   message: 'What is the department name?'
 }
-const roleQuestions = [{
-    type: 'input',
-    name: 'roleName',
-    message: 'What is the role name?'
-  },
-  {
-    type: 'input',
-    name: 'salary',
-    message: 'What is the salary?'
+
+var refreshRoleQuestions = function () {
+  const roleQuestions = [{
+      type: 'input',
+      name: 'roleName',
+      message: 'What is the role name?'
+    },
+    {
+      type: 'input',
+      name: 'salary',
+      message: 'What is the salary?'
+    },
+    {
+      type: 'list',
+      name: 'department',
+      message: 'Which department is this role in?',
+      choices: getDepartments()
+    },
+  ];
+  return roleQuestions
+}
+
+var refreshUpdateRole = function () {
+  const updateRoleQuestions = [{
+      type: 'list',
+      name: 'employee',
+      message: 'Which employee would you like to switch roles?',
+      choices: getEmployees()
+    },
+    {
+      type: 'list',
+      name: 'role',
+      message: 'Which role to assign?',
+      choices: getRoles()
+    },
+  ];
+  return updateRoleQuestions
+}
+
+var updateManagerQuestions = [{
+    type: 'list',
+    name: 'employee',
+    message: 'Which employee would you like to switch managers?',
+    choices: getEmployees()
   },
   {
     type: 'list',
-    name: 'department',
-    message: 'Which department is this role in?',
-    choices: getDepartments()
-  },
-]
-const updateEmpQuestions = [{
-  type: 'list',
-  name: 'employee',
-  message: 'Which employee would you like to switch roles?',
-  choices: getEmployees()
-},
-{
-  type: 'list',
-  name: 'role',
-  message: 'Which role to assign?',
-  choices: getRoles()
-}]
-
+    name: 'manager',
+    message: 'Which manager to assign?',
+    choices: getManagers()
+  }
+];
 var viewAllEmployees = function () {
   db.query(`SELECT
   e.id AS "Employee ID",
@@ -187,14 +211,14 @@ var addRole = function (response) {
     let toInsert = [
       [response.roleName, response.salary, departmentResult[0].id]
     ];
-  db.query(`INSERT INTO roles (title, salary, department_id) VALUES(?)`, toInsert, function (err, result) {
-    if (err) {
-      console.log(err);
-    }
-    console.log(result);
-  });
-  askQuestions();
-})
+    db.query(`INSERT INTO roles (title, salary, department_id) VALUES(?)`, toInsert, function (err, result) {
+      if (err) {
+        console.log(err);
+      }
+      console.log(result);
+    });
+    askQuestions();
+  })
 }
 
 var addEmployee = function (response) {
@@ -230,7 +254,7 @@ var addEmployee = function (response) {
 
 }
 
-var updateEmployee = function (response) {
+var updateEmployeeRole = function (response) {
   response = JSON.parse(response)
   let employeeName = response.employee.split(" ")
   let currentId = ''
@@ -239,25 +263,57 @@ var updateEmployee = function (response) {
     if (err) {
       console.log(err);
     }
-    
-  (db.query(`SELECT id FROM employees WHERE ('${employeeName[0]}'= employees.first_name AND '${employeeName[1]}' = employees.last_name)`, function (err, result) {
-    currentRole = roleresult[0].id
-    currentId = result[0].id
-    if (err) {
-      console.log(err);
-    }
-    db.query(`UPDATE employees
-    SET employees.role_id = ${currentRole}
-    WHERE employees.id = ${currentId};
-    `, function (err, result) {
+
+    (db.query(`SELECT id FROM employees WHERE ('${employeeName[0]}'= employees.first_name AND '${employeeName[1]}' = employees.last_name)`, function (err, result) {
+      currentRole = roleresult[0].id
+      currentId = result[0].id
       if (err) {
         console.log(err);
       }
-      console.log(result);
-      console.log('reached')
-      askQuestions()
-    });
-  }))
+      db.query(`UPDATE employees
+    SET employees.role_id = ${currentRole}
+    WHERE employees.id = ${currentId};
+    `, function (err, result) {
+        if (err) {
+          console.log(err);
+        }
+        console.log(result);
+        console.log('reached')
+        askQuestions()
+      });
+    }))
+  })
+}
+
+var updateEmployeeManager = function (response) {
+  response = JSON.parse(response)
+  let employeeName = response.employee.split(" ")
+  let managerName = response.manager.split(" ")
+  let currentManager = ''
+  let currentId = ''
+  db.query(`SELECT id FROM employees WHERE ('${employeeName[0]}'= employees.first_name AND '${employeeName[1]}' = employees.last_name)`, function (err, result) {
+    if (err) {
+      console.log(err);
+    }
+
+    (db.query(`SELECT id FROM employees WHERE ('${managerName[0]}'= employees.first_name AND '${managerName[1]}' = employees.last_name)`, function (err, manresult) {
+      currentId = result[0].id
+      currentManager = manresult[0].id
+      if (err) {
+        console.log(err);
+      }
+      db.query(`UPDATE employees
+    SET employees.manager_id = ${currentManager}
+    WHERE employees.id = ${currentId};
+    `, function (err, result) {
+        if (err) {
+          console.log(err);
+        }
+        console.log(result);
+        console.log('reached')
+        askQuestions()
+      });
+    }))
   })
 }
 
@@ -282,8 +338,11 @@ var nextQuestions = function (response) {
     case 'View all roles':
       viewAllRoles();
       break;
-      case 'Update an employee':
-      askUpdateEmpQuestions();
+    case 'Update an employee role':
+      askUpdateRoleQuestions();
+      break;
+    case 'Update an employee manager':
+      askUpdateManagerQuestions();
       break;
     default:
       return;
@@ -300,7 +359,7 @@ var askQuestions = function () {
 
 var askEmployeeQuestions = function () {
   inquirer
-    .prompt(refreshQuestions())
+    .prompt(refreshEmpQuestions())
     .then((data) =>
       addEmployee(JSON.stringify(data))
     )
@@ -316,17 +375,24 @@ var askDepartmentQuestions = function () {
 
 var askRoleQuestions = function () {
   inquirer
-    .prompt(roleQuestions)
+    .prompt(refreshRoleQuestions())
     .then((data) =>
       addRole(JSON.stringify(data))
     )
 }
 
-var askUpdateEmpQuestions = function () {
+var askUpdateRoleQuestions = function () {
   inquirer
-    .prompt(updateEmpQuestions)
+    .prompt(refreshUpdateRole())
     .then((data) =>
-      updateEmployee(JSON.stringify(data))
+      updateEmployeeRole(JSON.stringify(data))
+    )
+}
+var askUpdateManagerQuestions = function () {
+  inquirer
+    .prompt(updateManagerQuestions)
+    .then((data) =>
+      updateEmployeeManager(JSON.stringify(data))
     )
 }
 
