@@ -62,7 +62,7 @@ const questions = [{
   type: 'list',
   name: 'menu',
   message: 'What would you like to do?',
-  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View employees by manager', 'View employees by department', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Exit']
+  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View employees by manager', 'View employees by department', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Delete employee', 'Exit']
 }, ];
 var refreshEmpQuestions = function () {
   const empQuestions = [{
@@ -117,18 +117,20 @@ var refreshRoleQuestions = function () {
   return roleQuestions
 }
 
+// These do not refresh with updated roles, employees, or managers - ERROR!
+
 var updateRoleQuestions = [{
-  type: 'list',
-  name: 'employee',
-  message: 'Which employee would you like to switch roles?',
-  choices: getEmployees()
-},
-{
-  type: 'list',
-  name: 'role',
-  message: 'Which role to assign?',
-  choices: getRoles()
-},
+    type: 'list',
+    name: 'employee',
+    message: 'Which employee would you like to switch roles?',
+    choices: getEmployees()
+  },
+  {
+    type: 'list',
+    name: 'role',
+    message: 'Which role to assign?',
+    choices: getRoles()
+  },
 ];
 var updateManagerQuestions = [{
     type: 'list',
@@ -143,6 +145,15 @@ var updateManagerQuestions = [{
     choices: getManagers()
   },
 ];
+
+var deleteEmployeeQuestions = [{
+  type: 'list',
+  name: 'employee',
+  message: 'Which employee to delete?',
+  choices: getEmployees()
+}, ];
+
+
 
 var viewAllEmployees = function () {
   db.query(`SELECT
@@ -349,15 +360,26 @@ var updateEmployeeManager = function (response) {
   })
 }
 
-var deleteDepartment = function(){
+var deleteDepartment = function () {
 
 }
-var deleteRole = function(){
+var deleteRole = function () {
 
 }
-var deleteEmployee = function(){
+var deleteEmployee = function (response) {
+  response = JSON.parse(response)
+  let employeeName = response.employee.split(" ")
+  db.query(`DELETE FROM employees WHERE ('${employeeName[0]}'= employees.first_name AND '${employeeName[1]}' = employees.last_name)`, function (err, result) {
+    if (err) {
+      console.log(err);
+    }
+        askQuestions()
+      });
+    }
+  
 
-}
+
+
 
 var nextQuestions = function (response) {
   response = JSON.parse(response)
@@ -374,10 +396,10 @@ var nextQuestions = function (response) {
     case 'View all employees':
       viewAllEmployees();
       break;
-      case 'View employees by manager':
+    case 'View employees by manager':
       viewByManager();
       break;
-      case 'View employees by department':
+    case 'View employees by department':
       viewByDepartment();
       break;
     case 'View all departments':
@@ -391,6 +413,9 @@ var nextQuestions = function (response) {
       break;
     case 'Update an employee manager':
       askUpdateManagerQuestions();
+      break;
+    case 'Delete employee':
+      askDeleteEmpQuestions();
       break;
     default:
       return;
@@ -441,6 +466,14 @@ var askUpdateManagerQuestions = function () {
     .prompt(updateManagerQuestions)
     .then((data) =>
       updateEmployeeManager(JSON.stringify(data))
+    )
+}
+
+var askDeleteEmpQuestions = function () {
+  inquirer
+    .prompt(deleteEmployeeQuestions)
+    .then((data) =>
+      deleteEmployee(JSON.stringify(data))
     )
 }
 
