@@ -321,13 +321,16 @@ var updateEmployeeRole = function (response) {
   let currentId = ''
   let currentRole = ''
   db.query(`SELECT id FROM roles WHERE('${response.role}' = roles.title)`, function (err, roleresult) {
+    
     if (err) {
       console.log(err);
     }
-
+ 
     (db.query(`SELECT id FROM employees WHERE ('${employeeName[0]}'= employees.first_name AND '${employeeName[1]}' = employees.last_name)`, function (err, result) {
+   
       currentRole = roleresult[0].id
       currentId = result[0].id
+
       if (err) {
         console.log(err);
       }
