@@ -62,7 +62,7 @@ const questions = [{
   type: 'list',
   name: 'menu',
   message: 'What would you like to do?',
-  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View employees by manager', 'View employees by department', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Delete employee', 'Exit']
+  choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View employees by manager', 'View employees by department', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Delete department', 'Delete role', 'Delete employee', 'Exit']
 }, ];
 var refreshEmpQuestions = function () {
   const empQuestions = [{
@@ -151,6 +151,20 @@ var deleteEmployeeQuestions = [{
   name: 'employee',
   message: 'Which employee to delete?',
   choices: getEmployees()
+}, ];
+
+var deleteDepQuestions = [{
+  type: 'list',
+  name: 'department',
+  message: 'Which department to delete?',
+  choices: getDepartments()
+}, ];
+
+var deleteRoleQuestions = [{
+  type: 'list',
+  name: 'role',
+  message: 'Which role to delete?',
+  choices: getRoles()
 }, ];
 
 
@@ -360,11 +374,25 @@ var updateEmployeeManager = function (response) {
   })
 }
 
-var deleteDepartment = function () {
-
+var deleteDepartment = function (response) {
+  response = JSON.parse(response)
+  let department = response.department
+  db.query(`DELETE FROM departments WHERE ( '${department}' = departments.department_name )`, function (err, result) {
+    if (err) {
+      console.log(err);
+    }
+    askQuestions()
+  });
 }
-var deleteRole = function () {
-
+var deleteRole = function (response) {
+  response = JSON.parse(response)
+  let role = response.role
+  db.query(`DELETE FROM roles WHERE ('${role}'= roles.title)`, function (err, result) {
+    if (err) {
+      console.log(err);
+    }
+    askQuestions()
+  });
 }
 var deleteEmployee = function (response) {
   response = JSON.parse(response)
@@ -373,10 +401,10 @@ var deleteEmployee = function (response) {
     if (err) {
       console.log(err);
     }
-        askQuestions()
-      });
-    }
-  
+    askQuestions()
+  });
+}
+
 
 
 
@@ -416,6 +444,12 @@ var nextQuestions = function (response) {
       break;
     case 'Delete employee':
       askDeleteEmpQuestions();
+      break;
+    case 'Delete department':
+      askDeleteDepQuestions();
+      break;
+    case 'Delete role':
+      askDeleteRoleQuestions();
       break;
     default:
       return;
@@ -474,6 +508,22 @@ var askDeleteEmpQuestions = function () {
     .prompt(deleteEmployeeQuestions)
     .then((data) =>
       deleteEmployee(JSON.stringify(data))
+    )
+}
+
+var askDeleteDepQuestions = function () {
+  inquirer
+    .prompt(deleteDepQuestions)
+    .then((data) =>
+      deleteDepartment(JSON.stringify(data))
+    )
+}
+
+var askDeleteRoleQuestions = function () {
+  inquirer
+    .prompt(deleteRoleQuestions)
+    .then((data) =>
+      deleteRole(JSON.stringify(data))
     )
 }
 
