@@ -292,7 +292,6 @@ var addDepartment = function (response) {
     if (err) {
       console.log(err);
     }
-    console.log(result);
   });
   askQuestions();
 }
@@ -312,7 +311,6 @@ var addRole = function (response) {
       if (err) {
         console.log(err);
       }
-      console.log(result);
     });
     askQuestions();
   })
@@ -344,8 +342,6 @@ var addEmployee = function (response) {
         if (err) {
           console.log(err);
         }
-        console.log(result);
-        console.log('reached')
         // Returns to menu, continues to prompt user
         askQuestions()
       });
@@ -368,8 +364,6 @@ var updateEmployeeRole = function (response) {
     }
  
     (db.query(`SELECT id FROM employees WHERE ('${employeeName[0]}'= employees.first_name AND '${employeeName[1]}' = employees.last_name)`, function (err, result) {
-      console.log(roleresult)
-      console.log(result)
       currentRole = roleresult[0].id
       currentId = result[0].id
 
