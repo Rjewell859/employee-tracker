@@ -1,6 +1,8 @@
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
 
+// Connection to database
+
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -11,6 +13,7 @@ const db = mysql.createConnection({
 );
 
 
+// Gets all employees from database
 
 var getEmployees = function () {
   let employees = []
@@ -21,6 +24,9 @@ var getEmployees = function () {
   })
   return employees
 }
+
+// Gets all departments from database
+
 var getDepartments = function () {
   let departments = []
   db.query(`SELECT * FROM departments`, function (err, results) {
@@ -31,6 +37,8 @@ var getDepartments = function () {
   return departments
 }
 
+// Gets all roles from database
+
 var getRoles = function () {
   let roles = []
   db.query(`SELECT * FROM roles`, function (err, results) {
@@ -40,6 +48,9 @@ var getRoles = function () {
   })
   return roles
 }
+
+// Gets all managers from database
+
 var getManagers = function () {
   let managers = []
   db.query(`
@@ -58,12 +69,17 @@ WHERE department_name = "Management";`, function (err, results) {
   return managers
 }
 
+// Declaring main menu questions
+
 const questions = [{
   type: 'list',
   name: 'menu',
   message: 'What would you like to do?',
   choices: ['Add an employee', 'Add a department', 'Add a role', 'View all employees', 'View employees by manager', 'View employees by department', 'View all departments', 'View all roles', 'Update an employee role', 'Update an employee manager', 'Delete department', 'Delete role', 'Delete employee', 'Exit']
 }, ];
+
+// Updates and declares employee questions with current employees and roles
+
 var refreshEmpQuestions = function () {
   const empQuestions = [{
       type: 'input',
@@ -90,11 +106,14 @@ var refreshEmpQuestions = function () {
   ];
   return empQuestions
 }
+
 const departmentQuestion = {
   type: 'input',
   name: 'departmentName',
   message: 'What is the department name?'
 }
+
+// Updates and declares role questions with current departments.
 
 var refreshRoleQuestions = function () {
   const roleQuestions = [{
@@ -117,9 +136,9 @@ var refreshRoleQuestions = function () {
   return roleQuestions
 }
 
-// These do not refresh with updated roles, employees, or managers - ERROR!
+// Declaring update questions
 
-var updateRoleQuestions = [{
+const updateRoleQuestions = [{
     type: 'list',
     name: 'employee',
     message: 'Which employee would you like to switch roles?',
@@ -132,7 +151,7 @@ var updateRoleQuestions = [{
     choices: getRoles()
   },
 ];
-var updateManagerQuestions = [{
+const updateManagerQuestions = [{
     type: 'list',
     name: 'employee',
     message: 'Which employee would you like to switch managers?',
@@ -146,21 +165,23 @@ var updateManagerQuestions = [{
   },
 ];
 
-var deleteEmployeeQuestions = [{
+// Declaring delete questions
+
+const deleteEmployeeQuestions = [{
   type: 'list',
   name: 'employee',
   message: 'Which employee to delete?',
   choices: getEmployees()
 }, ];
 
-var deleteDepQuestions = [{
+const deleteDepQuestions = [{
   type: 'list',
   name: 'department',
   message: 'Which department to delete?',
   choices: getDepartments()
 }, ];
 
-var deleteRoleQuestions = [{
+const deleteRoleQuestions = [{
   type: 'list',
   name: 'role',
   message: 'Which role to delete?',
@@ -168,6 +189,7 @@ var deleteRoleQuestions = [{
 }, ];
 
 
+// Function to select and display all employees with console.table()
 
 var viewAllEmployees = function () {
   db.query(`SELECT
@@ -188,6 +210,8 @@ INNER JOIN employees m ON e.manager_id = m.id;`, function (err, results) {
   askQuestions();
 }
 
+// Function to view all employees ordered by their assigned manager
+
 var viewByManager = function () {
   db.query(`SELECT
   e.id AS "Employee ID",
@@ -207,6 +231,9 @@ ORDER BY manager;`, function (err, results) {
   });
   askQuestions();
 }
+
+// Function to view all employees ordered by their department
+
 var viewByDepartment = function () {
   db.query(`SELECT
   e.id AS "Employee ID",
@@ -227,6 +254,8 @@ ORDER BY department;`, function (err, results) {
   askQuestions();
 }
 
+// Selects and displays all roles
+
 var viewAllRoles = function () {
   db.query(`SELECT 
   r.id AS "Role ID",
@@ -241,6 +270,8 @@ var viewAllRoles = function () {
   askQuestions();
 }
 
+// Selects and displays all departments
+
 var viewAllDepartments = function () {
   db.query(`SELECT
   d.id AS "Department ID",
@@ -251,6 +282,8 @@ var viewAllDepartments = function () {
   });
   askQuestions();
 }
+
+// Creates a department that takes user input to assign a department name
 
 var addDepartment = function (response) {
   response = JSON.parse(response)
@@ -263,6 +296,9 @@ var addDepartment = function (response) {
   });
   askQuestions();
 }
+
+// Creates a role that has title, salary and department id as parameters
+
 var addRole = function (response) {
   response = JSON.parse(response)
   db.query(`SELECT id FROM departments WHERE('${response.department}' = departments.department_name)`, function (err, departmentResult) {
@@ -281,6 +317,8 @@ var addRole = function (response) {
     askQuestions();
   })
 }
+
+// Function to create an employee with first name, last name, role id, and manager id as parameters
 
 var addEmployee = function (response) {
   response = JSON.parse(response);
@@ -308,12 +346,15 @@ var addEmployee = function (response) {
         }
         console.log(result);
         console.log('reached')
+        // Returns to menu, continues to prompt user
         askQuestions()
       });
     }))
   });
 
 }
+
+// Reassigns an employees role
 
 var updateEmployeeRole = function (response) {
   response = JSON.parse(response)
@@ -347,6 +388,8 @@ var updateEmployeeRole = function (response) {
   })
 }
 
+// Reassigns an employee manager
+
 var updateEmployeeManager = function (response) {
   response = JSON.parse(response)
   let employeeName = response.employee.split(" ")
@@ -377,6 +420,8 @@ var updateEmployeeManager = function (response) {
   })
 }
 
+// Takes a department name and deletes the matching department from the database
+
 var deleteDepartment = function (response) {
   response = JSON.parse(response)
   let department = response.department
@@ -387,6 +432,9 @@ var deleteDepartment = function (response) {
     askQuestions()
   });
 }
+
+// Takes a role name and deletes the matching role from the database
+
 var deleteRole = function (response) {
   response = JSON.parse(response)
   let role = response.role
@@ -397,6 +445,9 @@ var deleteRole = function (response) {
     askQuestions()
   });
 }
+
+// Takes an employee name and deletes the matching employee from the database
+
 var deleteEmployee = function (response) {
   response = JSON.parse(response)
   let employeeName = response.employee.split(" ")
@@ -408,9 +459,7 @@ var deleteEmployee = function (response) {
   });
 }
 
-
-
-
+// Holds switch statement to follow up on menu questions
 
 var nextQuestions = function (response) {
   response = JSON.parse(response)
@@ -459,6 +508,8 @@ var nextQuestions = function (response) {
   }
 }
 
+// Ask main menu questions
+
 var askQuestions = function () {
   inquirer
     .prompt(questions)
@@ -466,6 +517,8 @@ var askQuestions = function () {
       nextQuestions(JSON.stringify(data))
     )
 }
+
+// Ask questions for creating an employee
 
 var askEmployeeQuestions = function () {
   inquirer
@@ -475,6 +528,8 @@ var askEmployeeQuestions = function () {
     )
 }
 
+// Ask questions for creating a department
+
 var askDepartmentQuestions = function () {
   inquirer
     .prompt(departmentQuestion)
@@ -482,6 +537,8 @@ var askDepartmentQuestions = function () {
       addDepartment(JSON.stringify(data))
     )
 }
+
+// Ask questions for creating a role
 
 var askRoleQuestions = function () {
   inquirer
@@ -491,6 +548,8 @@ var askRoleQuestions = function () {
     )
 }
 
+// Ask questions for updating a role
+
 var askUpdateRoleQuestions = function () {
   inquirer
     .prompt(updateRoleQuestions)
@@ -498,6 +557,9 @@ var askUpdateRoleQuestions = function () {
       updateEmployeeRole(JSON.stringify(data))
     )
 }
+
+// Ask questions for updating an employees manager
+
 var askUpdateManagerQuestions = function () {
   inquirer
     .prompt(updateManagerQuestions)
@@ -506,6 +568,7 @@ var askUpdateManagerQuestions = function () {
     )
 }
 
+// Ask a question for deleting an employee
 var askDeleteEmpQuestions = function () {
   inquirer
     .prompt(deleteEmployeeQuestions)
@@ -513,6 +576,8 @@ var askDeleteEmpQuestions = function () {
       deleteEmployee(JSON.stringify(data))
     )
 }
+
+// Ask a question for deleting a department
 
 var askDeleteDepQuestions = function () {
   inquirer
@@ -522,6 +587,8 @@ var askDeleteDepQuestions = function () {
     )
 }
 
+// Ask a question for deleting a role
+
 var askDeleteRoleQuestions = function () {
   inquirer
     .prompt(deleteRoleQuestions)
@@ -529,6 +596,8 @@ var askDeleteRoleQuestions = function () {
       deleteRole(JSON.stringify(data))
     )
 }
+
+// Start the application
 
 function init() {
   askQuestions()
